@@ -1,17 +1,15 @@
 import java.io.*;
 import java.util.*;
+import java.time.*;
 
 // ======================= PERSON =======================
 abstract class Person {
-
     protected String name;
     protected String email;
 
     public Person(String name, String email) {
-
         this.name = name;
         this.email = email;
-   
     }
 
     public abstract void display_info();
@@ -29,17 +27,18 @@ class Student extends Person {
         this.program = program;
     }
 
+    public String getId() {
+        return student_id;
+    }
+
     public String to_file_string() {
-
         return student_id + "," + name + "," + email + "," + program;
-
     }
 
     @Override
     public void display_info() {
-
-        System.out.println("ID: " + student_id + " | NAME: " + name + " | EMAIL: " + email + " | PROGRAM:" + program);
-    
+        System.out.println("ID: " + student_id + " | NAME: " + name +
+                " | EMAIL: " + email + " | PROGRAM: " + program);
     }
 }
 
@@ -57,44 +56,46 @@ class Course {
     }
 
     public String to_file_string() {
-
         return course_code + "," + course_name + "," + credit_hours;
-   
-    }
-
-    public void display_course() {
-
-        System.out.println(course_code + " | " + course_name + " | Credits: " + credit_hours);
-    
     }
 }
 
-// ======================= FILE MANAGER (TEXT BASED) =======================
+// ======================= FILE MANAGER =======================
 class File_Manager {
 
     public static void append(String filename, String data) {
         try (FileWriter fw = new FileWriter(filename, true)) {
             fw.write(data + "\n");
         } catch (IOException e) {
-            System.out.println("Error writing to file");
+            System.out.println("Error writing file");
         }
     }
 
-    public static void read(String filename) {
+    public static List<String> read_all(String filename) {
+        List<String> lines = new ArrayList<>();
         File file = new File(filename);
 
-        if (!file.exists()) {
-            System.out.println("No data found.");
-            return;
-        }
+        if (!file.exists()) return lines;
 
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             String line;
             while ((line = br.readLine()) != null) {
-                System.out.println(line.replace(",", " | "));
+                lines.add(line);
             }
         } catch (IOException e) {
             System.out.println("Error reading file");
+        }
+
+        return lines;
+    }
+
+    public static void write_all(String filename, List<String> data) {
+        try (PrintWriter pw = new PrintWriter(new FileWriter(filename))) {
+            for (String s : data) {
+                pw.println(s);
+            }
+        } catch (IOException e) {
+            System.out.println("Error updating file");
         }
     }
 }
@@ -105,99 +106,62 @@ public class Main_App {
     static Scanner sc = new Scanner(System.in);
 
     static final String STUDENT_FILE = "students.txt";
-    static final String COURSE_FILE  = "courses.txt";
+    static final String COURSE_FILE = "courses.txt";
+
+    // ⏱️ TIME FUNCTION
+    static String getTime() {
+        return LocalDateTime.now().toString();
+    }
 
     public static void main(String[] args) {
 
         while (true) {
-            System.out.println("\n*********************** Menu ***********************\n");
-            System.out.println("1. Add Student's record");
-            System.out.println("2. View Students records");
-            System.out.println("3. Add Course");
-            System.out.println("4. View all Courses");
-            System.out.println("5. Delete Student's record by name");
-            System.out.println("6. Exit\n");
-            System.out.print("Your Choice: ");
 
+            System.out.println("\n========== STUDENT SYSTEM ==========");
+            System.out.println("1. Add Student");
+            System.out.println("2. View Students");
+            System.out.println("3. Search Student by ID");
+            System.out.println("4. Update Student");
+            System.out.println("5. Delete Student by ID");
+            System.out.println("6. Add Course");
+            System.out.println("7. View Courses");
+            System.out.println("8. Statistics");
+            System.out.println("9. Exit");
+
+            System.out.print("Choice: ");
             int choice = sc.nextInt();
-            sc.nextLine(); // clear buffer
+            sc.nextLine();
 
             switch (choice) {
                 case 1 -> add_student();
                 case 2 -> view_students();
-                case 3 -> add_course();
-                case 4 -> view_courses();
-                case 5 -> delete_student_by_name();
-                case 6 -> {
-                    System.out.println("\n========================= Exiting... =======================\n");
-                    System.exit(0);
-                }
+                case 3 -> search_student();
+                case 4 -> update_student();
+                case 5 -> delete_student();
+                case 6 -> add_course();
+                case 7 -> view_courses();
+                case 8 -> show_stats();
+                case 9 -> System.exit(0);
                 default -> System.out.println("Invalid choice!");
             }
         }
     }
 
-
-    // to delete a student's record from a file
-    static void delete_student_by_name() {
-
-    System.out.print("Enter student name to delete: ");
-    String nameToDelete = sc.nextLine().toLowerCase();
-
-    File file = new File(STUDENT_FILE);
-
-    if (!file.exists()) {
-        System.out.println("No student data found.");
-        return;
-    }
-
-    List<String> updated_list = new ArrayList<>();
-    boolean found = false;
-
-    try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-        String line;
-
-        while ((line = br.readLine()) != null) {
-            String[] parts = line.split(",");
-
-            if (parts.length >= 2) {
-                String studentName = parts[1].toLowerCase();
-
-                if (studentName.equals(nameToDelete)) {
-                    found = true;  // Skip adding this line (i.e., delete)
-                    continue;
-                }
-            }
-            updated_list.add(line);
-        }
-    } catch (IOException e) {
-        System.out.println("Error reading file.");
-        return;
-    }
-
-    if (!found) {
-        System.out.println("No student found with that name.");
-        return;
-    }
-
-    // Rewrite file with updated list
-    try (PrintWriter pw = new PrintWriter(new FileWriter(file))) {
-        for (String s : updated_list) {
-            pw.println(s);
-        }
-    } catch (IOException e) {
-        System.out.println("Error updating file.");
-        return;
-    }
-
-    System.out.println("Student deleted successfully.");
-}
-
-
-// to add a student's record in a file
+    // ================= ADD STUDENT =================
     static void add_student() {
+
+        List<String> students = File_Manager.read_all(STUDENT_FILE);
+
         System.out.print("Student ID: ");
         String id = sc.nextLine();
+
+        for (String s : students) {
+            if (s.startsWith(id + ",")) {
+                System.out.println("Student ID already exists!");
+                return;
+            }
+        }
+
         System.out.print("Name: ");
         String name = sc.nextLine();
         System.out.print("Email: ");
@@ -205,18 +169,118 @@ public class Main_App {
         System.out.print("Program: ");
         String program = sc.nextLine();
 
-        Student s = new Student(id, name, email, program);
-        File_Manager.append(STUDENT_FILE, s.to_file_string());
+        String record = id + "," + name + "," + email + "," + program + ",CREATED_AT=" + getTime();
 
-        System.out.println("Student saved successfully.");
+        File_Manager.append(STUDENT_FILE, record);
+
+        System.out.println("Student added successfully at " + getTime());
     }
 
+    // ================= VIEW STUDENTS =================
     static void view_students() {
-        System.out.println("\n################ Students ###############");
-        File_Manager.read(STUDENT_FILE);
+        List<String> students = File_Manager.read_all(STUDENT_FILE);
+
+        if (students.isEmpty()) {
+            System.out.println("No students found.");
+            return;
+        }
+
+        for (String s : students) {
+            System.out.println(s.replace(",", " | "));
+        }
     }
 
+    // ================= SEARCH STUDENT =================
+    static void search_student() {
+
+        System.out.print("Enter ID: ");
+        String id = sc.nextLine();
+
+        List<String> students = File_Manager.read_all(STUDENT_FILE);
+
+        for (String s : students) {
+            if (s.startsWith(id + ",")) {
+                System.out.println("Found: " + s.replace(",", " | "));
+                return;
+            }
+        }
+
+        System.out.println("Student not found.");
+    }
+
+    // ================= UPDATE STUDENT =================
+    static void update_student() {
+
+        System.out.print("Enter ID to update: ");
+        String id = sc.nextLine();
+
+        List<String> students = File_Manager.read_all(STUDENT_FILE);
+        List<String> updated = new ArrayList<>();
+
+        boolean found = false;
+
+        for (String s : students) {
+            if (s.startsWith(id + ",")) {
+
+                found = true;
+
+                System.out.print("New Name: ");
+                String name = sc.nextLine();
+                System.out.print("New Email: ");
+                String email = sc.nextLine();
+                System.out.print("New Program: ");
+                String program = sc.nextLine();
+
+                String record = id + "," + name + "," + email + "," + program +
+                        ",UPDATED_AT=" + getTime();
+
+                updated.add(record);
+
+            } else {
+                updated.add(s);
+            }
+        }
+
+        if (!found) {
+            System.out.println("Student not found.");
+            return;
+        }
+
+        File_Manager.write_all(STUDENT_FILE, updated);
+        System.out.println("Student updated at " + getTime());
+    }
+
+    // ================= DELETE STUDENT =================
+    static void delete_student() {
+
+        System.out.print("Enter ID to delete: ");
+        String id = sc.nextLine();
+
+        List<String> students = File_Manager.read_all(STUDENT_FILE);
+        List<String> updated = new ArrayList<>();
+
+        boolean found = false;
+
+        for (String s : students) {
+            if (s.startsWith(id + ",")) {
+                found = true;
+                continue;
+            }
+            updated.add(s);
+        }
+
+        if (!found) {
+            System.out.println("Student not found.");
+            return;
+        }
+
+        File_Manager.write_all(STUDENT_FILE, updated);
+        System.out.println("Student deleted at " + getTime());
+    }
+
+    // ================= COURSE =================
     static void add_course() {
+
         System.out.print("Course Code: ");
         String code = sc.nextLine();
         System.out.print("Course Name: ");
@@ -225,14 +289,29 @@ public class Main_App {
         int credits = sc.nextInt();
         sc.nextLine();
 
-        Course c = new Course(code, name, credits);
-        File_Manager.append(COURSE_FILE, c.to_file_string());
+        String record = code + "," + name + "," + credits + ",CREATED_AT=" + getTime();
 
-        System.out.println("Course saved successfully.");
+        File_Manager.append(COURSE_FILE, record);
+
+        System.out.println("Course added at " + getTime());
     }
 
     static void view_courses() {
-        System.out.println("\n############### Courses ##################\n");
-        File_Manager.read(COURSE_FILE);
+        List<String> courses = File_Manager.read_all(COURSE_FILE);
+
+        for (String c : courses) {
+            System.out.println(c.replace(",", " | "));
+        }
+    }
+
+    // ================= STATS =================
+    static void show_stats() {
+
+        List<String> students = File_Manager.read_all(STUDENT_FILE);
+        List<String> courses = File_Manager.read_all(COURSE_FILE);
+
+        System.out.println("Total Students: " + students.size());
+        System.out.println("Total Courses: " + courses.size());
+        System.out.println("Last Updated: " + getTime());
     }
 }
